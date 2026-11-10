@@ -1,9 +1,15 @@
 import fetchData from '@/lib/fetchData';
 import { LoginResponse, UserResponse } from '@sharedTypes/MessageTypes';
-// TODO: add imports for WebAuthn functions
+import {
+  startRegistration,
+  startAuthentication,
+} from '@simplewebauthn/browser';
+import type {
+  PublicKeyCredentialCreationOptionsJSON,
+  PublicKeyCredentialRequestOptionsJSON,
+} from '@simplewebauthn/types';
 
 const useUser = () => {
-  // TODO: implement network functions for auth server user endpoints
   const getUserByToken = async (token: string) => {
     const options = {
       headers: {
@@ -31,25 +37,60 @@ const useUser = () => {
   return { getUserByToken, getUsernameAvailable, getEmailAvailable };
 };
 
-// TODO: Define usePasskey hook
 const usePasskey = () => {
-  // TODO: Define postUser function
-  const postUser = async (user) => {
-    // TODO: Set up request options
-    // TODO: Fetch setup response
-    // TODO: Start registration process
-    // TODO: Prepare data for verification
-    // TODO: Fetch and return verification response
+  const postUser = async (user: Record<string, string>) => {
+    const setupResponse = await fetchData<{
+      email: string;
+      options: PublicKeyCredentialCreationOptionsJSON;
+    }>(import.meta.env.VITE_PASSKEY_API + '/passkey/setup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(user),
+    });
+
+    // Otetaan options suoraan ilman optionsJSON-käärettä
+    const registrationOptions = await startRegistration(setupResponse.options);
+
+    const verifyResponse = await fetchData<UserResponse>(
+      import.meta.env.VITE_PASSKEY_API + '/passkey/verify',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: setupResponse.email,
+          registrationOptions,
+        }),
+      },
+    );
+
+    return verifyResponse;
   };
 
-  // TODO: Define postLogin function
-  const postLogin = async (email) => {
-    // TODO: Fetch login setup options
-    // TODO: Start authentication process
-    // TODO: Fetch and return login verification response
+  const postLogin = async (email: string) => {
+    const options = await fetchData<PublicKeyCredentialRequestOptionsJSON>(
+      import.meta.env.VITE_PASSKEY_API + '/passkey/login-setup',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      },
+    );
+
+    // Otetaan options suoraan ilman optionsJSON-käärettä
+    const authResponse = await startAuthentication(options);
+
+    const loginResponse = await fetchData<LoginResponse>(
+      import.meta.env.VITE_PASSKEY_API + '/passkey/login-verify',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, authResponse }),
+      },
+    );
+
+    return loginResponse;
   };
 
-  // TODO: Return postUser and postLogin functions
   return { postUser, postLogin };
 };
 

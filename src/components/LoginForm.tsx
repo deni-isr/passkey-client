@@ -3,13 +3,12 @@ import { CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useUserContext } from '@/hooks/contextHooks';
-import { Credentials } from '@/types/LocalTypes';
 import { useForm } from '@/hooks/formHooks';
 
 const LoginForm = () => {
   const { handleLogin } = useUserContext();
 
-  const initValues: Credentials = { email: '' };
+  const initValues = { email: '' };
 
   const doLogin = async () => {
     handleLogin(inputs.email);
@@ -27,7 +26,7 @@ const LoginForm = () => {
       </CardHeader>
       <CardContent className="space-y-4 px-6 py-8">
         <div className="space-y-2">
-          <Label htmlFor="email">email</Label>
+          <Label htmlFor="email">Email</Label>
           <Input
             id="email"
             name="email"
